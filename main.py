@@ -10,6 +10,8 @@ def take_sku(file_path):
     sku_list = []
     wookbook = openpyxl.load_workbook(f"{file_path}")
     worksheet = wookbook.active
+    worksheet.append(['dsfbdfb'])
+    wookbook.save(f"{file_path}")
     for i in worksheet.values:
         sku_list.append(i[0])
     return sku_list
@@ -47,7 +49,7 @@ def check_feedback_link(id_feed):
     return feedbacks_list
 
 
-def take_feedback(id_feed):
+def take_feedback(id_feed, feedback_pk_list):
     feedbacks_list = check_feedback_link(id_feed)
     feedbacks_data_list = []
     if feedbacks_list:
@@ -55,8 +57,27 @@ def take_feedback(id_feed):
             if int(i['productValuation']) <= 4:
                 valuation = i['productValuation']
                 text = i['text']
-                feedbacks_data_list.append([valuation, text])
+                feedback_pk = i['id']
+                if feedback_pk not in feedback_pk_list:
+                    feedbacks_data_list.append([valuation, text])
+                    feedback_pk_list.append(feedback_pk)
         return feedbacks_data_list
+
+
+def get_feedback_pk(file_path):
+    feedback_pk_list = []
+    wookbook = openpyxl.load_workbook(f"{file_path}")
+    worksheet = wookbook.active
+    for i in worksheet.values:
+        feedback_pk_list.append(i[0])
+    return feedback_pk_list
+
+def save_feedback_pk(fedback_pk_list, file_path):
+    wookbook = openpyxl.load_workbook(f"{file_path}")
+    worksheet = wookbook.active
+    for i in fedback_pk_list:
+        worksheet.append([i])
+    wookbook.save(f"{file_path}")
 
 def send_message(message):
     load_dotenv()
@@ -75,17 +96,21 @@ def send_message(message):
 
 def main():
     sku_list = take_sku(file_path="SKU.xlsx")
+    feedback_pk_list = get_feedback_pk(file_path='feedback_pk.xlsx')
     for sku in sku_list:
         data = id_feedback(sku)
         if data:
             id_feed = data[0]
             name = data[1]
             raiting = data[2]
-            feedbacks_data_list = take_feedback(id_feed)
+            feedbacks_data_list = take_feedback(id_feed, feedback_pk_list)
             if feedbacks_data_list:
                 for feedback in feedbacks_data_list:
                     message = (f'негативный отзыв/{name}/{sku}/{feedback[0]}/{feedback[1]}/{raiting}')
                     send_message(message)
+
+    save_feedback_pk(feedback_pk_list, file_path='feedback_pk.xlsx')
+
 
 
 
